@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chromatic Clash - Territory Painting Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Righteous&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="bg-effects">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <!-- Main Menu Screen -->
+  <div id="menu-screen" class="screen active">
+    <div class="menu-container">
+      <div class="logo-container">
+        <h1 class="game-logo">
+          <span class="logo-chromatic">Chromatic</span>
+          <span class="logo-clash">Clash</span>
+        </h1>
+        <p class="tagline">Paint. Conquer. Win.</p>
+      </div>
+      
+      <div class="menu-card">
+        <div class="input-group">
+          <label for="player-name">Your Name</label>
+          <input type="text" id="player-name" placeholder="Enter your name..." maxlength="15" autocomplete="off">
+        </div>
+        
+        <div class="menu-buttons">
+          <button id="create-room-btn" class="btn btn-primary">
+            <span class="btn-icon">🎨</span>
+            Create Game
+          </button>
+          <button id="join-room-btn" class="btn btn-secondary">
+            <span class="btn-icon">🚀</span>
+            Join Game
+          </button>
+        </div>
+        
+        <div id="join-input-container" class="join-input hidden">
+          <div class="input-group">
+            <label for="room-code">Room Code</label>
+            <input type="text" id="room-code" placeholder="XXXXX" maxlength="5" autocomplete="off">
+          </div>
+          <button id="confirm-join-btn" class="btn btn-accent">Enter Room</button>
+        </div>
+      </div>
+      
+      <div class="how-to-play">
+        <h3>How to Play</h3>
+        <div class="rules">
+          <div class="rule">
+            <span class="rule-icon">🖌️</span>
+            <span>Move to paint territory in your color</span>
+          </div>
+          <div class="rule">
+            <span class="rule-icon">⚡</span>
+            <span>Collect power-ups for special abilities</span>
+          </div>
+          <div class="rule">
+            <span class="rule-icon">🏆</span>
+            <span>Most painted pixels when time runs out wins!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobby-screen" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <h2>Game Lobby</h2>
+        <div class="room-code-display">
+          <span class="label">Room Code</span>
+          <span id="display-room-code" class="code">-----</span>
+          <button id="copy-code-btn" class="copy-btn" title="Copy code">📋</button>
+        </div>
+      </div>
+      
+      <div class="players-grid" id="players-grid">
+        <!-- Players will be added here dynamically -->
+      </div>
+      
+      <!-- Theme Selector (Host Only) -->
+      <div id="theme-selector" class="theme-selector hidden">
+        <h3>Choose Map Theme</h3>
+        <div class="theme-grid">
+          <div class="theme-option selected" data-theme="neon-night">
+            <div class="theme-preview neon-night-preview"></div>
+            <span class="theme-name">Neon Night</span>
+          </div>
+          <div class="theme-option" data-theme="ocean-depths">
+            <div class="theme-preview ocean-depths-preview"></div>
+            <span class="theme-name">Ocean Depths</span>
+          </div>
+          <div class="theme-option" data-theme="sunset-valley">
+            <div class="theme-preview sunset-valley-preview"></div>
+            <span class="theme-name">Sunset Valley</span>
+          </div>
+          <div class="theme-option" data-theme="forest-mist">
+            <div class="theme-preview forest-mist-preview"></div>
+            <span class="theme-name">Forest Mist</span>
+          </div>
+          <div class="theme-option" data-theme="cosmic-void">
+            <div class="theme-preview cosmic-void-preview"></div>
+            <span class="theme-name">Cosmic Void</span>
+          </div>
+          <div class="theme-option" data-theme="candy-land">
+            <div class="theme-preview candy-land-preview"></div>
+            <span class="theme-name">Candy Land</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Theme Display (Non-Host) -->
+      <div id="theme-display" class="theme-display hidden">
+        <span>Map Theme:</span>
+        <span id="current-theme-name" class="current-theme">Neon Night</span>
+      </div>
+      
+      <!-- Power-ups Guide -->
+      <div class="powerups-guide">
+        <h3>⚡ Power-ups Guide</h3>
+        <div class="powerup-list">
+          <div class="powerup-card">
+            <div class="powerup-icon-large">💣</div>
+            <div class="powerup-info">
+              <span class="powerup-title">Paint Bomb</span>
+              <span class="powerup-desc">Instantly paints a massive circular area in your color</span>
+            </div>
+          </div>
+          <div class="powerup-card">
+            <div class="powerup-icon-large">🛡️</div>
+            <div class="powerup-info">
+              <span class="powerup-title">Shield</span>
+              <span class="powerup-desc">Protects your painted pixels from being overwritten for 8 seconds</span>
+            </div>
+          </div>
+          <div class="powerup-card">
+            <div class="powerup-icon-large">🧹</div>
+            <div class="powerup-info">
+              <span class="powerup-title">Eraser</span>
+              <span class="powerup-desc">Clears all enemy pixels in an area around you</span>
+            </div>
+          </div>
+          <div class="powerup-card">
+            <div class="powerup-icon-large">⚡</div>
+            <div class="powerup-info">
+              <span class="powerup-title">Speed Boost</span>
+              <span class="powerup-desc">Increases movement speed and brush size for 6 seconds</span>
+            </div>
+          </div>
+          <div class="powerup-card">
+            <div class="powerup-icon-large">❄️</div>
+            <div class="powerup-info">
+              <span class="powerup-title">Freeze</span>
+              <span class="powerup-desc">Freezes all other players in place for 3 seconds</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="waiting-indicator">
+        <div class="waiting-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <p id="waiting-text">Waiting for players...</p>
+      </div>
+      
+      <div class="lobby-actions">
+        <button id="start-game-btn" class="btn btn-primary btn-large hidden">
+          Start Game
+        </button>
+        <button id="leave-room-btn" class="btn btn-ghost">
+          Leave Room
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen">
+    <div class="game-container">
+      <div class="game-header">
+        <div class="timer-container">
+          <div class="timer-ring">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" class="timer-bg"/>
+              <circle cx="50" cy="50" r="45" class="timer-progress" id="timer-progress"/>
+            </svg>
+            <span id="timer-display" class="timer-value">90</span>
+          </div>
+        </div>
+        
+        <div class="scoreboard" id="scoreboard">
+          <!-- Scores will be added here dynamically -->
+        </div>
+      </div>
+      
+      <div class="canvas-wrapper">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="countdown-overlay" class="countdown-overlay hidden">
+          <span id="countdown-number" class="countdown-number">3</span>
+        </div>
+      </div>
+      
+      <div class="powerups-legend">
+        <h4>Power-ups</h4>
+        <div class="powerup-items">
+          <div class="powerup-item">
+            <span class="powerup-icon bomb">💣</span>
+            <span>Bomb</span>
+          </div>
+          <div class="powerup-item">
+            <span class="powerup-icon shield">🛡️</span>
+            <span>Shield</span>
+          </div>
+          <div class="powerup-item">
+            <span class="powerup-icon eraser">🧹</span>
+            <span>Eraser</span>
+          </div>
+          <div class="powerup-item">
+            <span class="powerup-icon speed">⚡</span>
+            <span>Speed</span>
+          </div>
+          <div class="powerup-item">
+            <span class="powerup-icon freeze">❄️</span>
+            <span>Freeze</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="results-screen" class="screen">
+    <div class="results-container">
+      <h2 class="results-title">Game Over!</h2>
+      
+      <div class="winner-showcase" id="winner-showcase">
+        <div class="crown">👑</div>
+        <div class="winner-name" id="winner-name">Winner</div>
+        <div class="winner-score" id="winner-score">0 pixels</div>
+      </div>
+      
+      <div class="final-standings" id="final-standings">
+        <!-- Final rankings will be added here -->
+      </div>
+      
+      <div class="results-actions">
+        <button id="play-again-btn" class="btn btn-primary">Play Again</button>
+        <button id="back-to-menu-btn" class="btn btn-secondary">Back to Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="notification" class="notification hidden">
+    <span id="notification-text"></span>
+  </div>
+
+  <!-- Sound Toggle Button -->
+  <button id="sound-toggle" class="sound-toggle" title="Toggle Sound">
+    <span id="sound-icon">🔊</span>
+  </button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
