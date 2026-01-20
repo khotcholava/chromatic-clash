@@ -2,6 +2,8 @@
 
 A real-time multiplayer territory painting battle game. Compete with friends to paint the most pixels on a shared canvas!
 
+**[Play Live](https://chromatic-clash.onrender.com/)**
+
 ![Chromatic Clash](https://via.placeholder.com/800x400/1a1a2e/FF6B6B?text=Chromatic+Clash)
 
 ## 🎮 How to Play
