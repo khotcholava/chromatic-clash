@@ -4,7 +4,10 @@ A real-time multiplayer territory painting battle game. Compete with friends to 
 
 **[Play Live](https://chromatic-clash.onrender.com/)**
 
-![Chromatic Clash](https://via.placeholder.com/800x400/1a1a2e/FF6B6B?text=Chromatic+Clash)
+<p align="center">
+  <img src="public/logo.png" alt="Chromatic Clash Logo" width="320"/>
+</p>
+
 
 ## 🎮 How to Play
 
