@@ -267,6 +267,16 @@ class ChromaticClash {
     this.mouseY = 0;
     this.isMouseOnCanvas = false;
     
+    // Throttling for mobile performance
+    this.lastMoveTime = 0;
+    this.moveThrottle = 16; // ~60fps max (16ms between moves)
+    this.pendingMove = null;
+    this.rafPending = false;
+    
+    // Optimistic rendering (client-side painting)
+    this.optimisticPixels = new Map(); // Track locally painted pixels
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     // Animation
     this.animationId = null;
     this.lastTime = 0;
@@ -470,6 +480,7 @@ class ChromaticClash {
       data.players.forEach(p => this.players.set(p.id, p));
       this.countdownOverlay.classList.add('hidden');
       this.territoryCtx.clearRect(0, 0, this.territoryCanvas.width, this.territoryCanvas.height);
+      this.optimisticPixels.clear(); // Clear optimistic pixels on new game
       this.powerups = [];
       this.effects = [];
       this.updateScoreboard();
@@ -492,9 +503,14 @@ class ChromaticClash {
       }
     });
     
-    // Canvas update
+    // Canvas update from server
     this.socket.on('canvasUpdate', (pixels) => {
       pixels.forEach(pixel => {
+        const pixelKey = `${pixel.x},${pixel.y}`;
+        
+        // Remove from optimistic pixels (server confirmed)
+        this.optimisticPixels.delete(pixelKey);
+        
         if (pixel.color === null) {
           this.territoryCtx.clearRect(pixel.x, pixel.y, 1, 1);
         } else {
@@ -624,12 +640,8 @@ class ChromaticClash {
       this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
-      // Send movement to server
-      this.socket.emit('move', {
-        roomCode: this.roomCode,
-        x: this.mouseX,
-        y: this.mouseY,
-      });
+      // Send movement to server (throttled)
+      this.sendMoveToServer(this.mouseX, this.mouseY);
     });
     
     this.canvas.addEventListener('mouseenter', () => {
@@ -640,7 +652,7 @@ class ChromaticClash {
       this.isMouseOnCanvas = false;
     });
     
-    // Touch support - improved for mobile
+    // Touch support - improved for mobile with throttling
     this.canvas.addEventListener('touchmove', (e) => {
       if (this.gameState !== 'playing') return;
       e.preventDefault();
@@ -654,11 +666,11 @@ class ChromaticClash {
       this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
-      this.socket.emit('move', {
-        roomCode: this.roomCode,
-        x: this.mouseX,
-        y: this.mouseY,
-      });
+      // Optimistic rendering for immediate feedback
+      this.paintOptimistically(this.mouseX, this.mouseY);
+      
+      // Send movement to server (throttled)
+      this.sendMoveToServer(this.mouseX, this.mouseY);
     }, { passive: false });
     
     this.canvas.addEventListener('touchstart', (e) => {
@@ -674,6 +686,10 @@ class ChromaticClash {
       this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
+      // Optimistic rendering for immediate feedback
+      this.paintOptimistically(this.mouseX, this.mouseY);
+      
+      // Send movement to server immediately on touch start
       this.socket.emit('move', {
         roomCode: this.roomCode,
         x: this.mouseX,
@@ -691,6 +707,74 @@ class ChromaticClash {
       e.preventDefault();
       this.isMouseOnCanvas = false;
     }, { passive: false });
+  }
+  
+  // Throttled server communication
+  sendMoveToServer(x, y) {
+    const now = performance.now();
+    
+    // Throttle to ~60fps (16ms between sends)
+    if (now - this.lastMoveTime < this.moveThrottle) {
+      this.pendingMove = { x, y };
+      if (!this.rafPending) {
+        this.rafPending = true;
+        requestAnimationFrame(() => {
+          if (this.pendingMove) {
+            this.socket.emit('move', {
+              roomCode: this.roomCode,
+              x: this.pendingMove.x,
+              y: this.pendingMove.y,
+            });
+            this.lastMoveTime = performance.now();
+            this.pendingMove = null;
+          }
+          this.rafPending = false;
+        });
+      }
+      return;
+    }
+    
+    // Send immediately if enough time has passed
+    this.socket.emit('move', {
+      roomCode: this.roomCode,
+      x: x,
+      y: y,
+    });
+    this.lastMoveTime = now;
+    this.pendingMove = null;
+  }
+  
+  // Optimistic client-side painting for immediate feedback
+  paintOptimistically(x, y) {
+    if (!this.player) return;
+    
+    const currentPlayer = this.players.get(this.socket.id);
+    if (!currentPlayer) return;
+    
+    const brushSize = currentPlayer.brushSize || 15;
+    const halfBrush = Math.floor(brushSize / 2);
+    const color = currentPlayer.color;
+    
+    // Paint pixels locally immediately
+    for (let dy = -halfBrush; dy <= halfBrush; dy++) {
+      for (let dx = -halfBrush; dx <= halfBrush; dx++) {
+        if (dx * dx + dy * dy <= halfBrush * halfBrush) {
+          const px = Math.floor(x + dx);
+          const py = Math.floor(y + dy);
+          
+          if (px >= 0 && px < this.canvasWidth && py >= 0 && py < this.canvasHeight) {
+            const pixelKey = `${px},${py}`;
+            
+            // Only paint if not already painted optimistically
+            if (!this.optimisticPixels.has(pixelKey)) {
+              this.territoryCtx.fillStyle = color;
+              this.territoryCtx.fillRect(px, py, 1, 1);
+              this.optimisticPixels.set(pixelKey, color);
+            }
+          }
+        }
+      }
+    }
   }
   
   // Get canvas coordinates accounting for scaling
