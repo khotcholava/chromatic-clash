@@ -247,6 +247,8 @@ class ChromaticClash {
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.canvasRect = null;
+    this.canvasWidth = this.canvas.width; // 800
+    this.canvasHeight = this.canvas.height; // 600
     
     // Off-screen canvas for territory
     this.territoryCanvas = document.createElement('canvas');
@@ -432,6 +434,7 @@ class ChromaticClash {
     // Player left
     this.socket.on('playerLeft', (data) => {
       const player = this.players.get(data.playerId);
+      console.log('playerLeft', player);
       if (player) {
         this.showNotification(`${player.name} left the game`);
         this.players.delete(data.playerId);
@@ -614,9 +617,11 @@ class ChromaticClash {
     // Mouse move on canvas
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.gameState !== 'playing') return;
-      this.updateCanvasRect();
-      this.mouseX = e.clientX - this.canvasRect.left;
-      this.mouseY = e.clientY - this.canvasRect.top;
+      const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+      if (!coords) return;
+      
+      this.mouseX = coords.x;
+      this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
       // Send movement to server
@@ -635,14 +640,18 @@ class ChromaticClash {
       this.isMouseOnCanvas = false;
     });
     
-    // Touch support
+    // Touch support - improved for mobile
     this.canvas.addEventListener('touchmove', (e) => {
       if (this.gameState !== 'playing') return;
       e.preventDefault();
-      this.updateCanvasRect();
+      e.stopPropagation();
+      
       const touch = e.touches[0];
-      this.mouseX = touch.clientX - this.canvasRect.left;
-      this.mouseY = touch.clientY - this.canvasRect.top;
+      const coords = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+      if (!coords) return;
+      
+      this.mouseX = coords.x;
+      this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
       this.socket.emit('move', {
@@ -655,10 +664,14 @@ class ChromaticClash {
     this.canvas.addEventListener('touchstart', (e) => {
       if (this.gameState !== 'playing') return;
       e.preventDefault();
-      this.updateCanvasRect();
+      e.stopPropagation();
+      
       const touch = e.touches[0];
-      this.mouseX = touch.clientX - this.canvasRect.left;
-      this.mouseY = touch.clientY - this.canvasRect.top;
+      const coords = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+      if (!coords) return;
+      
+      this.mouseX = coords.x;
+      this.mouseY = coords.y;
       this.isMouseOnCanvas = true;
       
       this.socket.emit('move', {
@@ -668,9 +681,45 @@ class ChromaticClash {
       });
     }, { passive: false });
     
-    this.canvas.addEventListener('touchend', () => {
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
       this.isMouseOnCanvas = false;
-    });
+    }, { passive: false });
+    
+    // Prevent scrolling and zooming on touch
+    this.canvas.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      this.isMouseOnCanvas = false;
+    }, { passive: false });
+  }
+  
+  // Get canvas coordinates accounting for scaling
+  getCanvasCoordinates(clientX, clientY) {
+    this.updateCanvasRect();
+    
+    // Calculate scale factor between displayed size and actual canvas size
+    const scaleX = this.canvasWidth / this.canvasRect.width;
+    const scaleY = this.canvasHeight / this.canvasRect.height;
+    
+    // Get relative position within the displayed canvas
+    const relativeX = clientX - this.canvasRect.left;
+    const relativeY = clientY - this.canvasRect.top;
+    
+    // Scale to actual canvas coordinates
+    const canvasX = relativeX * scaleX;
+    const canvasY = relativeY * scaleY;
+    
+    // Clamp to canvas bounds
+    const clampedX = Math.max(0, Math.min(this.canvasWidth - 1, canvasX));
+    const clampedY = Math.max(0, Math.min(this.canvasHeight - 1, canvasY));
+    
+    // Check if coordinates are within canvas bounds
+    if (relativeX < 0 || relativeX > this.canvasRect.width ||
+        relativeY < 0 || relativeY > this.canvasRect.height) {
+      return null;
+    }
+    
+    return { x: clampedX, y: clampedY };
   }
   
   updateCanvasRect() {

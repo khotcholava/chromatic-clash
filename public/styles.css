@@ -62,6 +62,8 @@
 }
 
 html, body {
+  touch-action: pan-y; /* Allow vertical scrolling for page, but prevent during game */
+  -webkit-overflow-scrolling: touch;
   height: 100%;
   overflow: hidden;
 }
@@ -1008,12 +1010,18 @@ body {
   box-shadow: 
     0 0 0 4px rgba(255, 255, 255, 0.1),
     0 20px 60px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 #game-canvas {
   display: block;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   cursor: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Countdown Overlay */
@@ -1244,6 +1252,13 @@ body {
   #game-canvas {
     max-width: 100%;
     height: auto;
+    width: 100%;
+    touch-action: none;
+  }
+  
+  .canvas-wrapper {
+    width: 100%;
+    touch-action: none;
   }
   
   .menu-buttons {

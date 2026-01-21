@@ -468,6 +468,11 @@ io.on('connection', (socket) => {
   // Handle disconnect
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
+const isHost = rooms.get(socket.id)?.hostId === socket.id;
+if (isHost) {
+  rooms.delete(socket.id);
+  console.log(`Room ${socket.id} deleted (host disconnected)`);
+}
     
     // Find and clean up rooms
     rooms.forEach((room, roomCode) => {
